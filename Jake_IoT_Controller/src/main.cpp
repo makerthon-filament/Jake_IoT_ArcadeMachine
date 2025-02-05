@@ -1,9 +1,13 @@
+#include "thingProperties.h" // Arduino IoT Cloud 라이브러리
+#include <Arduino.h>
 #include <NeoPixelConnect.h>  // NeoPixel LED 라이브러리
 #include <DHT.h>              // DHT 온습도 센서 라이브러리
 #include <Adafruit_GFX.h>     // Adafruit 그래픽 라이브러리 (OLED 디스플레이 지원)
 #include <Adafruit_SSD1306.h> // Adafruit OLED 디스플레이 라이브러리
+#include <BH1750.h>           // BH1750 조도 센서 라이브러리
+#include <WiFiNINA.h>
 
-#define DEBUG_MODE_ENABLE 1
+#define DEBUG_MODE_ENABLE 0
 
 // NeoPixel LED 설정
 #define PIXEL_CONTROL_PIN 15
@@ -24,10 +28,14 @@ const long displayDelay = 5000;
 
 // 전역 변수 선언
 unsigned char redColor = 0, greenColor = 0, blueColor = 0;
-float fHumidity, fTemperature;
 bool flgEmotionalModeEnable = true;
 bool flgInitialDisplayDone = false;
 unsigned long previousMillis = 0;
+double hue, saturation, value;
+void rgb_to_hsv(double r, double g, double b);
+
+unsigned long lastCloudUpdate = 0;
+const unsigned long cloudUpdateInterval = 100; // 100ms 간격으로 업데이트
 
 // OLED 초기 화면 비트맵 데이터 (로고나 초기 화면 이미지)
 static const unsigned char epd_bitmap_oled_background[] PROGMEM = {
@@ -68,17 +76,23 @@ static const unsigned char epd_bitmap_oled_background[] PROGMEM = {
 NeoPixelConnect myLEDStrip(PIXEL_CONTROL_PIN, MAXIMUM_NUM_NEOPIXELS, pio0, 0);
 DHT myDHT(DHT_PIN, DHTTYPE);
 Adafruit_SSD1306 myOledDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+BH1750 lightMeter;
 
 // 함수 선언 (프로토타이핑)
 void initializeOLED();
-void displaySensorData(float temperature, float humidity);
+void displaySensorData(float temperature, float humidity, float lightLevel);
+void sendHSV_ColorDataToCloud(void);
 
 // 초기 설정 함수 (한 번만 실행)
 void setup()
 {
   Serial.begin(115200);
-  myDHT.begin();
   Wire.begin();
+  myDHT.begin();
+  lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE);
+
+  initProperties();
+  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
   initializeOLED();
 }
 
@@ -86,6 +100,11 @@ void setup()
 void loop()
 {
   unsigned long currentMillis = millis();
+  if (currentMillis - lastCloudUpdate >= cloudUpdateInterval)
+  {
+    ArduinoCloud.update();
+    lastCloudUpdate = currentMillis;
+  }
 
   if (!flgInitialDisplayDone && currentMillis - previousMillis >= displayDelay)
   {
@@ -97,16 +116,20 @@ void loop()
   {
     fHumidity = myDHT.readHumidity();
     fTemperature = myDHT.readTemperature();
+    fLightBrightness = lightMeter.readLightLevel();
 
 #if (DEBUG_MODE_ENABLE == 1)
     Serial.print("Humidity: ");
     Serial.print(fHumidity);
     Serial.print("%   Temperature: ");
     Serial.print(fTemperature);
-    Serial.println("^C");
+    Serial.print("^C   Light: ");
+    Serial.print(fLightBrightness);
+    Serial.println(" lx");
 #endif
 
-    displaySensorData(fTemperature, fHumidity);
+    // 온습도 및 조도 값 OLED에 표시
+    displaySensorData(fTemperature, fHumidity, fLightBrightness);
 
     // 온도에 따라 NeoPixel LED 색상 설정- 추후 조건에 따라 함수화
     if (fTemperature >= 32)
@@ -163,8 +186,8 @@ void initializeOLED()
   previousMillis = millis();
 }
 
-// OLED에 온도 및 습도 데이터 표시 함수
-void displaySensorData(float temperature, float humidity)
+// OLED에 온도, 습도, 조도 데이터 표시 함수
+void displaySensorData(float temperature, float humidity, float lightLevel)
 {
   myOledDisplay.clearDisplay();
   myOledDisplay.setTextSize(1);
@@ -180,5 +203,52 @@ void displaySensorData(float temperature, float humidity)
   myOledDisplay.print(humidity);
   myOledDisplay.println("%");
 
+  myOledDisplay.print("Light: ");
+  myOledDisplay.print(lightLevel);
+  myOledDisplay.println(" lx");
+
   myOledDisplay.display();
+}
+
+// 현재 NeoPixel LED의 RGB 값을 HSV로 변환하여 클라우드로 전송하는 함수
+void sendHSV_ColorDataToCloud(void)
+{
+  rgb_to_hsv(redColor, greenColor, blueColor);
+
+  setRGBcolor.setHue(hue);
+  setRGBcolor.setSaturation(saturation);
+  setRGBcolor.setBrightness(value);
+}
+
+// RGB 값을 HSV로 변환하는 함수
+void rgb_to_hsv(double r, double g, double b)
+{
+  r = r / 255.0;
+  g = g / 255.0;
+  b = b / 255.0;
+
+  double cmax = max(r, max(g, b)); // r, g, b 중 최대값
+  double cmin = min(r, min(g, b)); // r, g, b 중 최소값
+  double diff = cmax - cmin;       // 최대값과 최소값의 차이
+  hue = -1;
+  saturation = -1;
+
+  // Hue 계산
+  if (cmax == cmin)
+    hue = 0;
+  else if (cmax == r)
+    hue = fmod(60 * ((g - b) / diff) + 360, 360);
+  else if (cmax == g)
+    hue = fmod(60 * ((b - r) / diff) + 120, 360);
+  else if (cmax == b)
+    hue = fmod(60 * ((r - g) / diff) + 240, 360);
+
+  // Saturation 계산
+  if (cmax == 0)
+    saturation = 0;
+  else
+    saturation = (diff / cmax) * 100;
+
+  // Brightness (Value) 계산
+  value = cmax * 100;
 }
