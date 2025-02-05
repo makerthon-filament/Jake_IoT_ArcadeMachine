@@ -7,7 +7,7 @@
 #include <BH1750.h>           // BH1750 조도 센서 라이브러리
 #include <WiFiNINA.h>
 
-#define DEBUG_MODE_ENABLE 1
+#define DEBUG_MODE_ENABLE 0
 
 // NeoPixel LED 설정
 #define PIXEL_CONTROL_PIN 15
@@ -33,6 +33,9 @@ bool flgInitialDisplayDone = false;
 unsigned long previousMillis = 0;
 double hue, saturation, value;
 void rgb_to_hsv(double r, double g, double b);
+
+unsigned long lastCloudUpdate = 0;
+const unsigned long cloudUpdateInterval = 100; // 100ms 간격으로 업데이트
 
 // OLED 초기 화면 비트맵 데이터 (로고나 초기 화면 이미지)
 static const unsigned char epd_bitmap_oled_background[] PROGMEM = {
@@ -96,8 +99,12 @@ void setup()
 // 메인 루프 (계속 반복 실행)
 void loop()
 {
-  ArduinoCloud.update();
   unsigned long currentMillis = millis();
+  if (currentMillis - lastCloudUpdate >= cloudUpdateInterval)
+  {
+    ArduinoCloud.update();
+    lastCloudUpdate = currentMillis;
+  }
 
   if (!flgInitialDisplayDone && currentMillis - previousMillis >= displayDelay)
   {
@@ -203,6 +210,7 @@ void displaySensorData(float temperature, float humidity, float lightLevel)
   myOledDisplay.display();
 }
 
+// 현재 NeoPixel LED의 RGB 값을 HSV로 변환하여 클라우드로 전송하는 함수
 void sendHSV_ColorDataToCloud(void)
 {
   rgb_to_hsv(redColor, greenColor, blueColor);
