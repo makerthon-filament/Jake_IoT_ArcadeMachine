@@ -11,10 +11,8 @@ Arduino Nano RP2040 Connect 기반 AI 음성인식과 IoT 기술을 융합한 �
 
 ### 🏅 수상 내역
 - **글로벌 라이프 스타일 가전 메이커톤 대상 (1등)**
-- 혁신적인 AI-IoT 융합 기술력 인정
 
 ---
-
 ## ⚡ 핵심 기능
 
 ### 1. 🎤 AI 음성 명령 제어
@@ -288,36 +286,6 @@ pio run
 - 직관적인 터치, 음성, 앱 제어 방식
 - 실시간 피드백을 통한 우수한 사용자 경험
 
----
-
-## 🔮 향후 개발 계획
-
-### Phase 1: 기능 확장
-- [ ] 더 많은 음성 명령 추가 ("Purple", "Yellow", "Rainbow" 등)
-- [ ] 스케줄링 기능 (특정 시간에 자동 색상 변경)
-- [ ] 음악과 연동된 라이트 쇼 기능
-
-### Phase 2: 하드웨어 최적화
-- [ ] PCB 설계를 통한 소형화
-- [ ] 3D 프린팅 케이스 제작
-- [ ] 배터리 구동 지원
-
-### Phase 3: 상용화 준비
-- [ ] 다중 디바이스 관리 시스템
-- [ ] 클라우드 기반 사용자 관리
-- [ ] 제품 인증 및 양산 검토
-
----
-
-## 👥 팀 구성 및 역할
-
-**팀장 / 기술 총괄**
-- 프로젝트 기획 및 전체 시스템 아키텍처 설계
-- Edge Impulse AI 모델 개발 및 최적화
-- Arduino 펌웨어 개발 (센서, LED, OLED 제어)
-- React Native 블루투스 앱 개발
-- AWS Alexa Skills 개발 및 연동
-- Arduino Cloud 통합 및 IoT 시스템 구축
 
 ---
 
@@ -332,17 +300,3 @@ pio run
 - [Edge Impulse Documentation](https://docs.edgeimpulse.com/)
 - [Arduino IoT Cloud](https://docs.arduino.cc/arduino-cloud/)
 - [React Native BLE Manager](https://github.com/innoveit/react-native-ble-manager)
-
----
-
-## ⭐ 마무리
-
-이 프로젝트는 AI, IoT, 모바일 개발의 완벽한 융합을 통해 사용자에게 혁신적인 스마트홈 경험을 제공합니다. **글로벌 라이프 스타일 가전 메이커톤 대상** 수상이라는 성과는 단순히 기술적 우수성뿐만 아니라, 실제 사용자의 니즈를 정확히 파악하고 해결한 결과입니다.
-
-이 프로젝트를 통해 **하드웨어 제어부터 AI 모델 개발, 클라우드 통합, 모바일 앱 개발까지** 전 영역에서의 풀스택 개발 역량을 입증했습니다.
-
----
-
-*"Innovation starts with imagination, but it's completed with implementation."*
-
-**🏆 글로벌 라이프 스타일 가전 메이커톤 대상 수상작 🏆**
